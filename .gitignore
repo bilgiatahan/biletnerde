@@ -1,0 +1,24 @@
+# kök .gitignore önerisi
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+pnpm-lock.yaml
+package-lock.json
+
+# backend
+backend/.DS_Store
+backend/dist/
+backend/node_modules/
+backend/data/*.sqlite
+backend/.env*
+
+# web
+web/.next/
+web/out/
+web/node_modules/
+web/.DS_Store
+web/build/
+web/.env*

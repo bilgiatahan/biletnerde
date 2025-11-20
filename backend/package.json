@@ -1,0 +1,41 @@
+{
+  "name": "biletnerede-backend",
+  "version": "1.0.0",
+  "description": "Ticket aggregator backend for Next.js frontend",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "start:dev": "ts-node-dev --respawn --transpile-only --project tsconfig.json src/main.ts"
+  },
+  "dependencies": {
+    "@nestjs/axios": "^3.0.0",
+    "@nestjs/bullmq": "^10.0.0",
+    "@nestjs/cache-manager": "^2.0.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/typeorm": "^11.0.0",
+    "axios": "^1.7.4",
+    "bullmq": "^5.16.1",
+    "cache-manager": "^5.4.0",
+    "cache-manager-redis-yet": "^5.1.4",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "sqlite3": "^5.1.7",
+    "typeorm": "^0.3.20",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^10.0.0",
+    "@types/node": "^20.17.0",
+    "@types/uuid": "^10.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.2"
+  }
+}
