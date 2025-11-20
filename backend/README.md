@@ -158,10 +158,14 @@ ORM olarak Prisma veya TypeORM kullanılabilir. (Cursor uygun olanı seçsin.)
 
 REDIS_HOST=localhost
 REDIS_PORT=6379
+USE_REDIS_CACHE=true
+ENABLE_CACHE=true
 
 MOCK_PROVIDER_A_URL=http://localhost:3000/mock/provider-a
 MOCK_PROVIDER_B_URL=http://localhost:3000/mock/provider-b
 MOCK_PROVIDER_C_URL=http://localhost:3000/mock/provider-c
+
+Not: Cache'i geçici olarak devre dışı bırakmak için `ENABLE_CACHE=false` yapabilirsiniz.
 
 ✔ 10. Ek Gereksinimler
 

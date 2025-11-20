@@ -1,5 +1,6 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { TicketsRepository } from './tickets.repository';
 import { GetTicketsDto } from './dto/get-tickets.dto';
@@ -21,13 +22,19 @@ export class TicketsService {
     'date',
   ];
 
+  private readonly enableCache: boolean;
+
   constructor(
     private readonly ticketsRepository: TicketsRepository,
     private readonly providerAService: ProviderAService,
     private readonly providerBService: ProviderBService,
     private readonly providerCService: ProviderCService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Cache'i geçici olarak devre dışı bırakmak için ENABLE_CACHE=false yapabilirsiniz
+    this.enableCache = this.configService.get<string>('ENABLE_CACHE', 'true') === 'true';
+  }
 
   async getTickets(filter?: GetTicketsDto) {
     const safeFilter = filter ?? {};
@@ -36,7 +43,7 @@ export class TicketsService {
     const hasActiveFilters = TicketsService.FILTERABLE_FIELDS.some(
       (field) => safeFilter[field] !== undefined,
     );
-    const useCache = !hasActiveFilters;
+    const useCache = !hasActiveFilters && this.enableCache;
 
     if (useCache) {
       const cached = (await this.cacheManager.get(
@@ -79,7 +86,12 @@ export class TicketsService {
     const merged = [...aTickets, ...bTickets, ...cTickets];
     await this.ticketsRepository.clear();
     await this.ticketsRepository.saveMany(merged);
-    await this.cacheManager.del(CACHE_KEYS.ALL_TICKETS);
+    
+    // Cache'i temizle (cache aktifse)
+    if (this.enableCache) {
+      await this.cacheManager.del(CACHE_KEYS.ALL_TICKETS);
+    }
+    
     return merged;
   }
 
