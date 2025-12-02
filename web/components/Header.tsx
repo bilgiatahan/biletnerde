@@ -159,7 +159,7 @@ export function Header({ page }: { page: 'home' | 'events' }) {
                                     {event.title}
                                   </div>
                                   <div className='flex items-center gap-2 mt-0.5 text-xs text-gray-500'>
-                                    <span className='truncate'>{event.city}</span>
+                                    <span className='truncate'>{event.location}</span>
                                     <span className='text-gray-400'>•</span>
                                     <span>
                                       {new Date(event.date).toLocaleDateString('tr-TR', {

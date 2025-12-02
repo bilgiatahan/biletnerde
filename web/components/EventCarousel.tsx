@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventCard } from './EventCard';
-import { Ticket } from '../types';
+import { Event, Ticket } from '../types';
 import { useRef } from 'react';
 
 interface EventCarouselProps {

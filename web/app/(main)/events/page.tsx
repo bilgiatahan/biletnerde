@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 import { EventsListPage } from '@/components/EventsListPage';
 import { Header } from '@/components/Header';
@@ -39,7 +40,9 @@ export default async function EventsPage({ searchParams }: PageProps) {
     <div>
       <Header page='events' />
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <EventsListPage />
+        <Suspense fallback={<div className='py-16 text-center text-gray-500'>Etkinlikler yükleniyor...</div>}>
+          <EventsListPage />
+        </Suspense>
       </HydrationBoundary>
     </div>
   );

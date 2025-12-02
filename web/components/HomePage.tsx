@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Event } from '../types';
+import { Event, Ticket } from '../types';
 import { EventCarousel } from './EventCarousel';
 import { HeroSlider } from './HeroSlider';
 import { SearchBar } from './SearchBar';
@@ -11,12 +11,10 @@ import { Sparkles, TrendingUp, Calendar, X } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface HomePageProps {
-  events: Event[];
-  onViewDetails: (eventId: string) => void;
-  onViewAllEvents: () => void;
+  events: Ticket[];
 }
 
-export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePageProps) {
+export function HomePage({ events }: HomePageProps) {
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
 
   useEffect(() => {
@@ -28,8 +26,8 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
       return () => window.clearTimeout(timer);
     }
   }, []);
-  const featuredEvents = events.filter((e) => e.featured);
-  const popularEvents = events.filter((e) => e.popular);
+  const featuredEvents = events.slice(0, 5);
+  const popularEvents = events.slice(0, 5);
 
   // Get events for this week
   const today = new Date();
@@ -51,7 +49,6 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
   }) => {
     // Navigate to events list with filters
     console.log('Search filters:', filters);
-    onViewAllEvents();
   };
 
   return (
@@ -90,7 +87,6 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
                 size='lg'
                 onClick={() => {
                   setShowWelcomeDialog(false);
-                  onViewAllEvents();
                 }}
                 className='w-full bg-indigo-600 text-white hover:bg-indigo-700'
               >
@@ -109,7 +105,7 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
         </DialogContent>
       </Dialog>
 
-      <HeroSlider events={heroEvents} onViewDetails={onViewDetails} />
+      <HeroSlider events={heroEvents} />
 
       <SearchBar onSearch={handleSearch} />
 
@@ -122,13 +118,12 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
           </div>
           <Button
             variant='ghost'
-            onClick={onViewAllEvents}
             className='text-indigo-600 hover:text-indigo-700'
           >
             Tümünü Gör →
           </Button>
         </div>
-        <EventCarousel events={featuredEvents} onViewDetails={onViewDetails} />
+        <EventCarousel events={featuredEvents} />
       </section>
 
       {/* Popular Events */}
@@ -137,7 +132,7 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
           <TrendingUp className='h-6 w-6 text-indigo-600' />
           <h2 className='text-gray-900'>Popüler Etkinlikler</h2>
         </div>
-        <EventCarousel events={popularEvents} onViewDetails={onViewDetails} />
+        <EventCarousel events={popularEvents} />
       </section>
 
       {/* This Week */}
@@ -149,13 +144,12 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
           </div>
           <Button
             variant='ghost'
-            onClick={onViewAllEvents}
             className='text-indigo-600 hover:text-indigo-700'
           >
             Tümünü Gör →
           </Button>
         </div>
-        <EventCarousel events={thisWeekEvents} onViewDetails={onViewDetails} />
+        <EventCarousel events={thisWeekEvents} />
       </section>
 
       {/* CTA Section */}
@@ -168,7 +162,6 @@ export function HomePage({ events, onViewDetails, onViewAllEvents }: HomePagePro
           </p>
           <Button
             size='lg'
-            onClick={onViewAllEvents}
             className='bg-white text-indigo-600 hover:bg-indigo-50'
           >
             Etkinlikleri Keşfet

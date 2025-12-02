@@ -5,6 +5,8 @@ build/
 .env
 .env.*
 *.log
+*.md
+
 pnpm-lock.yaml
 package-lock.json
 
@@ -14,6 +16,7 @@ backend/dist/
 backend/node_modules/
 backend/data/*.sqlite
 backend/.env*
+backend/*.md
 
 # web
 web/.next/
@@ -22,3 +25,4 @@ web/node_modules/
 web/.DS_Store
 web/build/
 web/.env*
+web/*.md

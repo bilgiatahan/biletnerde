@@ -30,13 +30,15 @@ export interface Ticket {
   location: string;
   venue: string;
   category: string;
-  price: number;
+  price: string | number;
   date: string;
   description: string;
   time: string;
   url: string;
   image: string;
-  rawData: any;
+  featured?: boolean;
+  popular?: boolean;
+  rawData?: any;
 }
 
 export interface TicketResponse {

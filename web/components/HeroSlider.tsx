@@ -6,17 +6,16 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper/types';
 import { Autoplay } from 'swiper/modules';
 import 'swiper/css';
-import { Event } from '../types';
+import { Event, Ticket } from '../types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface HeroSliderProps {
-  events: Event[];
-  onViewDetails: (eventId: string) => void;
+  events: Ticket[];
 }
 
-export function HeroSlider({ events, onViewDetails }: HeroSliderProps) {
+export function HeroSlider({ events }: HeroSliderProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
 
@@ -100,7 +99,7 @@ export function HeroSlider({ events, onViewDetails }: HeroSliderProps) {
                       <div className='flex items-center gap-2 text-white/90'>
                         <MapPin className='h-5 w-5' />
                         <span className='text-sm md:text-base'>
-                          {event.venue}, {event.city}
+                          {event.venue}, {event.location}
                         </span>
                       </div>
                     </div>
@@ -115,10 +114,9 @@ export function HeroSlider({ events, onViewDetails }: HeroSliderProps) {
                     <div className='flex flex-col sm:flex-row gap-4'>
                       <Button
                         size='lg'
-                        onClick={() => onViewDetails(event.id)}
                         className='bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'
                       >
-                        Bilet Al • {event.platform}
+                        Bilet Al • {event.provider}
                       </Button>
                     </div>
                   </div>
