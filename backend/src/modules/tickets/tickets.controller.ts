@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { GetTicketsDto } from './dto/get-tickets.dto';
 
@@ -9,6 +9,11 @@ export class TicketsController {
   @Get()
   async list(@Query() query: GetTicketsDto) {
     return this.ticketsService.getTickets(query);
+  }
+
+  @Get(':id')
+  async detail(@Param('id') id: string) {
+    return this.ticketsService.getTicketById(id);
   }
 
   // Mock senaryoda worker beklememek icin manuel senkronizasyon ucu

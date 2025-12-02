@@ -1,5 +1,5 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { TicketsRepository } from './tickets.repository';
@@ -93,6 +93,16 @@ export class TicketsService {
     }
     
     return merged;
+  }
+
+  async getTicketById(id: string): Promise<TicketEntity> {
+    const ticket = await this.ticketsRepository.findOneById(id);
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    return ticket;
   }
 
   private buildPaginatedResponse(tickets: TicketEntity[], page: number, limit: number) {

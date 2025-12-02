@@ -2,15 +2,14 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventCard } from './EventCard';
-import { Event } from '../types';
+import { Ticket } from '../types';
 import { useRef } from 'react';
 
 interface EventCarouselProps {
-  events: Event[];
-  onViewDetails: (eventId: string) => void;
+  events: Ticket[];
 }
 
-export function EventCarousel({ events, onViewDetails }: EventCarouselProps) {
+export function EventCarousel({ events }: EventCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -49,7 +48,7 @@ export function EventCarousel({ events, onViewDetails }: EventCarouselProps) {
       >
         {events.map((event) => (
           <div key={event.id} className='flex-none w-[260px] md:w-[280px]'>
-            <EventCard event={event} onViewDetails={onViewDetails} />
+            <EventCard event={event} />
           </div>
         ))}
       </div>

@@ -1,36 +1,46 @@
-'use client';
-
-import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { mockEvents } from '@/data/mockEvents';
-import { useFilters } from '@/lib/filters-context';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 import { EventsListPage } from '@/components/EventsListPage';
 import { Header } from '@/components/Header';
+import { getTickets } from '@/lib/api';
+import { buildTicketsQueryParams, ticketsQueryKey } from '@/lib/query-keys';
 
-export default function EventsPage() {
-  const router = useRouter();
-  const { selectedCity, searchQuery } = useFilters();
+interface PageProps {
+  searchParams: {
+    city?: string;
+    category?: string;
+    date?: string;
+    page?: string;
+    limit?: string;
+  };
+}
 
-  const events = useMemo(() => {
-    return mockEvents.filter((event) => {
-      const matchesCity = selectedCity === 'all' || event.city === selectedCity;
-      const normalizedQuery = searchQuery.trim().toLowerCase();
-      const matchesSearch =
-        normalizedQuery.length === 0 ||
-        event.title.toLowerCase().includes(normalizedQuery) ||
-        event.venue.toLowerCase().includes(normalizedQuery) ||
-        event.city.toLowerCase().includes(normalizedQuery);
-      return matchesCity && matchesSearch;
-    });
-  }, [selectedCity, searchQuery]);
+export default async function EventsPage({ searchParams }: PageProps) {
+  const city = searchParams.city && searchParams.city !== 'all' ? searchParams.city : undefined;
+  const parsedPage = Number(searchParams.page);
+  const parsedLimit = Number(searchParams.limit);
 
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 24;
+
+  const params = buildTicketsQueryParams({
+    location: city,
+    category: searchParams.category,
+    date: searchParams.date,
+    page,
+    limit,
+  });
+
+  const queryClient = new QueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: ticketsQueryKey(params),
+    queryFn: () => getTickets(params),
+  });
   return (
     <div>
       <Header page='events' />
-      <EventsListPage
-        events={events}
-        onViewDetails={(eventId) => router.push(`/events/${eventId}`)}
-      />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <EventsListPage />
+      </HydrationBoundary>
     </div>
   );
 }

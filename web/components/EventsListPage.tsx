@@ -1,95 +1,228 @@
 'use client';
 
-import { useState } from 'react';
-import { Event, FilterState } from '../types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { SlidersHorizontal } from 'lucide-react';
+
+import { getTickets } from '@/lib/api';
+import { buildTicketsQueryParams, ticketsQueryKey } from '@/lib/query-keys';
+import type { FilterState, TicketResponse } from '@/types';
 import { EventCard } from './EventCard';
 import { FilterSidebar } from './FilterSidebar';
 import { Button } from './ui/button';
-import { SlidersHorizontal } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { PaginationControls } from './PaginationControls';
 
-interface EventsListPageProps {
-  events: Event[];
-  onViewDetails: (eventId: string) => void;
-}
+const DEFAULT_LIMIT = 24;
 
-export function EventsListPage({ events, onViewDetails }: EventsListPageProps) {
-  const [filters, setFilters] = useState<FilterState>({
-    category: [],
-    city: [],
-    date: '',
-    platform: [],
-    sortBy: 'date',
-  });
+export function EventsListPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
+  const decodeListParam = useCallback((value?: string | null) => {
+    if (!value) return [];
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }, []);
+
+  const resolveDateFilter = useCallback((value: string | null | undefined) => {
+    if (!value) return undefined;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    const startOfDayUtc = (dateValue: Date) =>
+      new Date(
+        Date.UTC(
+          dateValue.getUTCFullYear(),
+          dateValue.getUTCMonth(),
+          dateValue.getUTCDate(),
+        ),
+      );
+
+    const toDateOnly = (dateValue: Date) => startOfDayUtc(dateValue).toISOString().slice(0, 10);
+
+    const now = new Date();
+
+    if (value === 'today') {
+      return toDateOnly(now);
+    }
+    if (value === 'week') {
+      const week = new Date(now);
+      week.setDate(week.getDate() + 7);
+      return toDateOnly(week);
+    }
+    if (value === 'month') {
+      const month = new Date(now);
+      month.setMonth(month.getMonth() + 1);
+      return toDateOnly(month);
+    }
+
+    return undefined;
+  }, []);
+
+  const inferDatePreset = useCallback(
+    (value: string | null | undefined): FilterState['date'] => {
+      if (!value) return '';
+      const presets: FilterState['date'][] = ['today', 'week', 'month'];
+      for (const preset of presets) {
+        if (resolveDateFilter(preset) === value) return preset;
+      }
+      return '';
+    },
+    [resolveDateFilter],
+  );
+
+  const deriveFiltersFromParams = useCallback((): FilterState => {
+    const params = searchParams;
+    const datePreset = inferDatePreset(params?.get('date'));
+    return {
+      category: decodeListParam(params?.get('category')),
+      city: decodeListParam(params?.get('city')),
+      date: datePreset,
+      platform: decodeListParam(params?.get('platform')),
+      sortBy: (params?.get('sortBy') as FilterState['sortBy']) ?? 'date',
+    };
+  }, [decodeListParam, inferDatePreset, searchParams]);
+
+  const [filters, setFilters] = useState<FilterState>(() => deriveFiltersFromParams());
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const filteredEvents = events.filter((event) => {
-    if (filters.category.length > 0 && !filters.category.includes(event.category)) {
-      return false;
-    }
+  useEffect(() => {
+    setFilters(deriveFiltersFromParams());
+  }, [deriveFiltersFromParams]);
 
-    if (filters.city.length > 0 && !filters.city.includes(event.city)) {
-      return false;
-    }
+  const currentPage = useMemo(() => {
+    const param = searchParams?.get('page');
+    const parsed = Number(param);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }, [searchParams]);
 
-    if (filters.platform.length > 0 && !filters.platform.includes(event.platform)) {
-      return false;
-    }
+  const limit = useMemo(() => {
+    const param = searchParams?.get('limit');
+    const parsed = Number(param);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_LIMIT;
+  }, [searchParams]);
 
-    if (filters.date) {
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+  const city = useMemo(() => {
+    const value = searchParams?.get('city');
+    if (!value) return undefined;
+    const [first] = value.split(',').filter(Boolean);
+    if (!first || first === 'all') return undefined;
+    return first;
+  }, [searchParams]);
 
-      if (filters.date === 'today') {
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        if (eventDate < today || eventDate >= tomorrow) return false;
-      } else if (filters.date === 'week') {
-        const nextWeek = new Date(today);
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        if (eventDate < today || eventDate > nextWeek) return false;
-      } else if (filters.date === 'month') {
-        const nextMonth = new Date(today);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        if (eventDate < today || eventDate > nextMonth) return false;
+  const category = useMemo(() => {
+    const value = searchParams?.get('category');
+    if (!value) return undefined;
+    const [first] = value.split(',').filter(Boolean);
+    return first;
+  }, [searchParams]);
+
+  const dateParam = searchParams?.get('date');
+  const date = useMemo(() => dateParam ?? undefined, [dateParam]);
+
+  const queryParams = useMemo(
+    () =>
+      buildTicketsQueryParams({
+        location: city,
+        category,
+        date,
+        page: currentPage,
+        limit,
+      }),
+    [category, city, currentPage, date, limit],
+  );
+
+  const { data, isLoading, isFetching, isError, refetch } = useQuery<TicketResponse>({
+    queryKey: ticketsQueryKey(queryParams),
+    queryFn: () => getTickets(queryParams),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const totalPages = data?.meta.totalPages ?? 1;
+  const totalResults = data?.meta.total ?? 0;
+  const hasResults = totalResults > 0;
+  const resultsStart = hasResults ? (currentPage - 1) * limit + 1 : 0;
+  const resultsEnd = hasResults ? Math.min(totalResults, currentPage * limit) : 0;
+
+  const buildUrl = (page: number) => {
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    params.set('page', page.toString());
+    params.set('limit', limit.toString());
+    const queryString = params.toString();
+    return `${pathname}${queryString ? `?${queryString}` : ''}`;
+  };
+
+  const applyFilters = (nextFilters: FilterState) => {
+    setFilters(nextFilters);
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+
+    const setArrayParam = (key: string, values: string[]) => {
+      if (!values.length) {
+        params.delete(key);
+        return;
       }
-    }
+      params.set(key, values.join(','));
+    };
 
-    return true;
-  });
+    setArrayParam('category', nextFilters.category);
+    setArrayParam('city', nextFilters.city);
+    setArrayParam('platform', nextFilters.platform);
 
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    if (filters.sortBy === 'date') {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    const resolvedDate = nextFilters.date ? resolveDateFilter(nextFilters.date) : undefined;
+    if (resolvedDate) {
+      params.set('date', resolvedDate);
     } else {
-      const scoreA = (a.featured ? 2 : 0) + (a.popular ? 1 : 0);
-      const scoreB = (b.featured ? 2 : 0) + (b.popular ? 1 : 0);
-      return scoreB - scoreA;
+      params.delete('date');
     }
-  });
+
+    if (nextFilters.sortBy && nextFilters.sortBy !== 'date') {
+      params.set('sortBy', nextFilters.sortBy);
+    } else {
+      params.delete('sortBy');
+    }
+
+    params.set('page', '1');
+    params.set('limit', limit.toString());
+
+    const targetUrl = `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    router.push(targetUrl);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) {
+      return;
+    }
+    router.push(buildUrl(page));
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className='min-h-screen bg-gray-50'>
       <div className='container mx-auto px-4 py-8'>
-        {/* Header */}
         <div className='mb-8'>
           <h1 className='text-gray-900 mb-2'>Tüm Etkinlikler</h1>
-          <p className='text-gray-600'>{sortedEvents.length} etkinlik bulundu</p>
+          <p className='text-gray-600'>
+            {isLoading ? 'Etkinlikler yükleniyor...' : `${totalResults} etkinlik bulundu`}
+            {!isLoading && hasResults && ` • ${resultsStart}-${resultsEnd}`}
+          </p>
         </div>
 
         <div className='flex gap-8'>
-          {/* Desktop Sidebar */}
-          <aside className='hidden lg:block w-64 flex-shrink-0'>
+          <aside className='hidden lg:block w-64 shrink-0'>
             <div className='sticky top-24'>
-              <FilterSidebar filters={filters} onFilterChange={setFilters} />
+              <FilterSidebar filters={filters} onFilterChange={applyFilters} />
             </div>
           </aside>
 
-          {/* Main Content */}
           <div className='flex-1'>
-            {/* Mobile Filter Button */}
             <div className='lg:hidden mb-6'>
               <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
                 <SheetTrigger asChild>
@@ -102,7 +235,7 @@ export function EventsListPage({ events, onViewDetails }: EventsListPageProps) {
                   <div className='p-6'>
                     <FilterSidebar
                       filters={filters}
-                      onFilterChange={setFilters}
+                      onFilterChange={applyFilters}
                       isMobile
                       onClose={() => setMobileFiltersOpen(false)}
                     />
@@ -111,36 +244,43 @@ export function EventsListPage({ events, onViewDetails }: EventsListPageProps) {
               </Sheet>
             </div>
 
-            {/* Events Grid */}
-            {sortedEvents.length > 0 ? (
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
-                {sortedEvents.map((event) => (
-                  <EventCard key={event.id} event={event} onViewDetails={onViewDetails} />
-                ))}
+            {isError && (
+              <div className='rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive'>
+                Etkinlikleri yüklerken bir sorun oluştu.
+                <button type='button' className='underline ml-1' onClick={() => refetch()}>
+                  Tekrar dene
+                </button>
               </div>
-            ) : (
-              <div className='text-center py-16'>
-                <div className='text-6xl mb-4'>🔍</div>
-                <h3 className='text-gray-900 mb-2'>Etkinlik Bulunamadı</h3>
-                <p className='text-gray-600 mb-6'>
-                  Seçtiğiniz filtrelere uygun etkinlik bulunamadı. Filtreleri değiştirerek tekrar
-                  deneyin.
-                </p>
-                <Button
-                  variant='outline'
-                  onClick={() =>
-                    setFilters({
-                      category: [],
-                      city: [],
-                      date: '',
-                      platform: [],
-                      sortBy: 'date',
-                    })
-                  }
-                >
-                  Filtreleri Temizle
-                </Button>
+            )}
+
+            {isLoading && !data && (
+              <div className='py-16 text-center text-gray-500'>Etkinlikler yükleniyor...</div>
+            )}
+
+            {!isLoading && data && data.data.length === 0 && (
+              <div className='py-16 text-center text-gray-500'>Bu filtreler için etkinlik bulunamadı.</div>
+            )}
+
+            {data && data.data.length > 0 && (
+              <div className='space-y-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
+                  {data.data.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+
+                {isFetching && (
+                  <p className='text-sm text-gray-500 text-center'>Yeni etkinlikler yükleniyor...</p>
+                )}
               </div>
+            )}
+
+            {data && totalPages > 1 && (
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             )}
           </div>
         </div>

@@ -22,3 +22,29 @@ export interface FilterState {
   platform: string[];
   sortBy: 'date' | 'popularity';
 }
+
+export interface Ticket {
+  id: string;
+  provider: string;
+  title: string;
+  location: string;
+  venue: string;
+  category: string;
+  price: number;
+  date: string;
+  description: string;
+  time: string;
+  url: string;
+  image: string;
+  rawData: any;
+}
+
+export interface TicketResponse {
+  data: Ticket[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

@@ -27,6 +27,12 @@ export class TicketsRepository {
     await this.ticketsRepo.clear();
   }
 
+  async findOneById(id: string): Promise<TicketEntity | null> {
+    return this.ticketsRepo.findOne({
+      where: { id },
+    });
+  }
+
   async findByFilter(
     filter: GetTicketsDto,
   ): Promise<{ data: TicketEntity[]; total: number }> {

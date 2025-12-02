@@ -11,8 +11,9 @@ import {
   Share2,
   Copy,
   Check,
+  Link,
 } from 'lucide-react';
-import { Event } from '../types';
+import { Ticket } from '../types';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { EventCarousel } from './EventCarousel';
@@ -26,17 +27,13 @@ import {
 import { toast } from 'sonner';
 
 interface EventDetailPageProps {
-  event: Event;
-  similarEvents: Event[];
-  onBack: () => void;
-  onViewDetails: (eventId: string) => void;
+  event: Ticket;
+  similarEvents: Ticket[];
 }
 
 export function EventDetailPage({
   event,
   similarEvents,
-  onBack,
-  onViewDetails,
 }: EventDetailPageProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -114,10 +111,12 @@ export function EventDetailPage({
       {/* Back Button */}
       <div className='bg-white border-b'>
         <div className='container mx-auto px-4 py-4'>
-          <Button variant='ghost' onClick={onBack} className='text-gray-600 hover:text-gray-900'>
-            <ArrowLeft className='mr-2 h-4 w-4' />
-            Geri Dön
-          </Button>
+          <Link href='/events'>
+            <Button variant='ghost' className='text-gray-600 hover:text-gray-900'>
+              <ArrowLeft className='mr-2 h-4 w-4' />
+              Geri Dön
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -134,7 +133,6 @@ export function EventDetailPage({
               />
               <div className='absolute top-4 left-4 flex gap-2'>
                 <Badge className={getCategoryColor()}>{getCategoryLabel(event.category)}</Badge>
-                {event.featured && <Badge className='bg-blue-600 text-white'>Öne Çıkan</Badge>}
               </div>
             </div>
 
@@ -227,7 +225,7 @@ export function EventDetailPage({
                   <div>
                     <div className='text-sm text-gray-500 mb-1'>Mekan</div>
                     <div className='text-gray-900'>{event.venue}</div>
-                    <div className='text-sm text-gray-600'>{event.city}</div>
+                    <div className='text-sm text-gray-600'>{event.location}</div>
                   </div>
                 </div>
 
@@ -237,7 +235,7 @@ export function EventDetailPage({
                   </div>
                   <div>
                     <div className='text-sm text-gray-500 mb-1'>Platform</div>
-                    <div className='text-gray-900'>{event.platform}</div>
+                    <div className='text-gray-900'>{event.provider}</div>
                   </div>
                 </div>
               </div>
@@ -265,21 +263,21 @@ export function EventDetailPage({
                   <div className='pt-4 border-t'>
                     <div className='text-sm text-gray-500 mb-2'>Bilet Satış Platformu</div>
                     <div className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'>
-                      <span className='font-medium text-gray-900'>{event.platform}</span>
+                      <span className='font-medium text-gray-900'>{event.provider}</span>
                     </div>
                   </div>
 
                   <Button
                     className='w-full bg-indigo-600 hover:bg-indigo-700 text-white'
                     size='lg'
-                    onClick={() => window.open(event.ticketUrl, '_blank')}
+                    onClick={() => window.open(event.url, '_blank')}
                   >
                     Bilet Satın Al
                     <ExternalLink className='ml-2 h-4 w-4' />
                   </Button>
 
                   <p className='text-xs text-gray-500 text-center'>
-                    {event.platform} sitesine yönlendirileceksiniz
+                    {event.provider} sitesine yönlendirileceksiniz
                   </p>
                 </div>
               </div>
@@ -300,7 +298,7 @@ export function EventDetailPage({
         {similarEvents.length > 0 && (
           <div className='mt-16'>
             <h2 className='text-gray-900 mb-6'>Benzer Etkinlikler</h2>
-            <EventCarousel events={similarEvents} onViewDetails={onViewDetails} />
+            <EventCarousel events={[]} />
           </div>
         )}
       </div>
